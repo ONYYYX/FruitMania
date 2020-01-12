@@ -1,7 +1,6 @@
 import sys
 import pygame
 import fruits
-import sprites
 import config
 
 

@@ -1,9 +1,9 @@
 import random
 import pygame
-import utils
-import config
 import managers
 import singletons
+import utils
+import config
 
 
 class AlphaAnimatedSprite(pygame.sprite.Sprite):
@@ -20,7 +20,7 @@ class AlphaAnimatedSprite(pygame.sprite.Sprite):
 
 
 class Life(pygame.sprite.Sprite):
-    life_sprites = utils.load_image('screens/game/lives.png')
+    life_sprites = utils.load_image(config.images['lives'])
     image_blue = utils.crop_image(life_sprites, pygame.Rect(6, 2, 88, 84))
     image_red = utils.crop_image(life_sprites, pygame.Rect(6, 90, 88, 84))
 
@@ -81,7 +81,7 @@ class CenteredFruitScore(FruitScore):
 
 
 class Splash(AlphaAnimatedSprite):
-    image = utils.load_image('screens/game/splashes.png', False)
+    image = utils.load_image(config.images['splashes'], False)
     cropped_images = [
         utils.crop_image(image, pygame.Rect(15, 13, 169, 180)),
         utils.crop_image(image, pygame.Rect(205, 10, 185, 188)),

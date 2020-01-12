@@ -1,10 +1,11 @@
 import sys
 import random
 import pygame
-import utils
 import singletons
-import sprites
 import objects
+import sprites
+import utils
+import config
 
 
 class Fruit(objects.RotatingEntity):
@@ -12,8 +13,8 @@ class Fruit(objects.RotatingEntity):
         super().__init__(singletons.FruitsGroup.get(), *groups)
         self.part_class = self.__class__.__name__ + 'Part'
         self._score = 5
-        self.sound_throw = pygame.mixer.Sound('media/sounds/throw-fruit.ogg')
-        self.sound_cut = pygame.mixer.Sound('media/sounds/squash.ogg')
+        self.sound_throw = pygame.mixer.Sound(config.sounds['fruit_throw'])
+        self.sound_cut = pygame.mixer.Sound(config.sounds['fruit_cut'])
         if throw_sound:
             self.sound_throw.play()
 
@@ -41,7 +42,7 @@ class Fruit(objects.RotatingEntity):
     @classmethod
     def get_image(cls):
         if not cls.image:
-            cls.image = utils.crop_image(utils.load_image(f'fruits.png'), cls.sprite_rect)
+            cls.image = utils.crop_image(utils.load_image(config.images['fruits']), cls.sprite_rect)
         return cls.image
 
 
@@ -51,9 +52,9 @@ class Bomb(Fruit):
     def __init__(self, *groups):
         super().__init__(*groups)
         self._score = -10
-        self.sound_throw = pygame.mixer.Sound('media/sounds/throw-bomb.ogg')
-        self.sound_cut = pygame.mixer.Sound('media/sounds/explosion.ogg')
-        self.sound_use = pygame.mixer.Sound('media/sounds/bomb-fuse.ogg')
+        self.sound_throw = pygame.mixer.Sound(config.sounds['bomb_throw'])
+        self.sound_cut = pygame.mixer.Sound(config.sounds['bomb_explode'])
+        self.sound_use = pygame.mixer.Sound(config.sounds['bomb_use'])
         self.sound_use.set_volume(0.1)
         self.sound_use.play()
 
@@ -124,7 +125,7 @@ class Part(objects.RotatingEntity):
     @classmethod
     def get_base_image(cls):
         if not cls.base_image:
-            cls.base_image = utils.load_image(f'parts.png')
+            cls.base_image = utils.load_image(config.images['parts'])
         return cls.base_image
 
 

@@ -1,8 +1,8 @@
 import math
-import pygame
-import config
-import utils
 import random
+import pygame
+import utils
+import config
 
 
 class Entity(pygame.sprite.Sprite):

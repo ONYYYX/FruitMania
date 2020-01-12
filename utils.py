@@ -19,7 +19,7 @@ def terminate() -> None:
 
 def load_image(name: str, convert: bool = True) -> pygame.Surface:
     init()  # Fix uninitialized display
-    image = pygame.image.load(os.path.join('media', name))
+    image = pygame.image.load(os.path.join('media/images', name))
     return image.convert_alpha() if convert else image
 
 

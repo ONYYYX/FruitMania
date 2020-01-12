@@ -1,9 +1,9 @@
 import math
 import pygame
-import config
 import vendor.padlib.particles as particles
 import singletons
 import sprites
+import config
 
 
 class Blade(pygame.sprite.Sprite):

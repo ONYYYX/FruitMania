@@ -12,6 +12,7 @@ class Database:
 
     def add_score(self, score) -> None:
         self.cursor.execute('INSERT INTO scores (score) VALUES (?)', (score, ))
+        self.connection.commit()
 
     def close(self) -> None:
         self.connection.close()
