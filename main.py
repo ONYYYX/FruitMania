@@ -1,10 +1,11 @@
 import pygame
-import utils
 import managers
 import screens
+import utils
+import config
 
 
-def main():
+def main() -> None:
     screen = utils.init()
     clock = pygame.time.Clock()
     managers.ScreensManager.set_screens(
@@ -13,7 +14,7 @@ def main():
         screens.Game,
         screens.EndTable
     )
-    pygame.display.set_caption('Fruit Mania')
+    pygame.display.set_caption(config.game_name)
     while True:
         managers.ScreensManager.get_next_screen().loop(screen, clock)
 

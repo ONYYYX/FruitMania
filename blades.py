@@ -30,7 +30,6 @@ class Blade(pygame.sprite.Sprite):
 
     def check_combo(self):
         max_combo = self.get_max_combo()
-        print(max_combo)
         if max_combo >= 1:
             sprites.CenteredFruitScore(f'Combo {max_combo + 2} fruits', max_combo * 2)
             pygame.mixer.Sound(f'media/sounds/combo-{max_combo if max_combo <= 8 else 8}.ogg').play()

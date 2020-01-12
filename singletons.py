@@ -13,13 +13,16 @@ class _Group(pygame.sprite.Group):
 
 
 class _FruitsGroup(_Group):
-    def delete_invisible(self):
+    def delete_invisible(self) -> int:
+        number = 0
         for fruit in self.sprites():
             # Верхнюю границу пересекать может, т.к. под силой тяжести все равно упадет
             if not (-fruit.rect.w < fruit.rect.x < config.width) or fruit.rect.y > config.height:
                 x, y = fruit.velocity
                 if y > 0:
                     fruit.kill()
+                    number += 1
+        return number
 
     def delete(self):
         for fruit in self.sprites():
@@ -49,9 +52,9 @@ class _BladesGroup(_Group):
         for blade in self.sprites():
             blade.session_started = False
 
-    def add_mouse_track_pos(self, pos):
+    def add_mouse_track_pos(self):
         for blade in self.sprites():
-            blade.add_mouse_track_pos(pos)
+            blade.add_mouse_track_pos(pygame.mouse.get_pos())
 
     def check_fruit_cut(self):
         has_fruit, has_bomb = False, False

@@ -1,6 +1,7 @@
 import typing
 import screens
 import game
+import database
 
 
 class ScreensManager:
@@ -28,3 +29,11 @@ class GameManager:
     @classmethod
     def get_instance(cls):
         return cls.game_instance
+
+
+class DatabaseManager:
+    db_instance: database.Database = database.Database()
+
+    @classmethod
+    def get_instance(cls):
+        return cls.db_instance
