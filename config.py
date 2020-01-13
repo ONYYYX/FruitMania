@@ -1,6 +1,6 @@
 fps = 60
-width = 1280
-height = 720
+width = 1920
+height = 1080
 gravity = 10
 blade_size = (10, 10)
 game_name = 'Fruit Mania'

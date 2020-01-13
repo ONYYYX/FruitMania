@@ -33,7 +33,7 @@ class Screen:
 
     def handle_events(self) -> None:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and pygame.key.get_pressed()[pygame.K_ESCAPE]:
                 managers.DatabaseManager.get_instance().close()
                 utils.terminate()
             self.handle_event(event)

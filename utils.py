@@ -4,12 +4,17 @@ import re
 import pygame
 import config
 
+screen = 0
+
 
 def init() -> pygame.Surface:
     if not pygame.get_init():
         pygame.init()
         pygame.mixer.init()
-    return pygame.display.set_mode((config.width, config.height))
+    global screen
+    if not screen:
+        screen = pygame.display.set_mode((config.width, config.height), pygame.FULLSCREEN)
+    return screen
 
 
 def terminate() -> None:
