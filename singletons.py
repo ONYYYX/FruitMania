@@ -19,8 +19,9 @@ class _FruitsGroup(_Group):
             if not (-fruit.rect.w < fruit.rect.x < config.width) or fruit.rect.y > config.height:
                 x, y = fruit.velocity
                 if y > 0:
+                    if not isinstance(fruit, fruits.Bomb):
+                        number += 1
                     fruit.kill()
-                    number += 1
         return number
 
     def delete(self):
@@ -55,11 +56,19 @@ class _BladesGroup(_Group):
         for blade in self.sprites():
             blade.add_mouse_track_pos(pygame.mouse.get_pos())
 
+    # Specially for MainMenu (for getting screen which is connected to our fruit)
+    def check_fruit_screen(self):
+        for blade in self.sprites():
+            if blade.session_started:
+                fruit = pygame.sprite.spritecollideany(blade, FruitsGroup.get())
+                if fruit:
+                    if hasattr(fruit, 'screen'):
+                        return getattr(fruit, 'screen')
+
     def check_fruit_cut(self):
         has_fruit, has_bomb = False, False
         for blade in self.sprites():
             if blade.session_started:
-                blade.add_mouse_track_pos(pygame.mouse.get_pos())
                 fruit = pygame.sprite.spritecollideany(blade, FruitsGroup.get())
                 if fruit:
                     blade.add_cut_fruit(fruit)
