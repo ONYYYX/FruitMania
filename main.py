@@ -12,7 +12,8 @@ def main() -> None:
         screens.Loading,
         screens.MainMenu,
         screens.Game,
-        screens.EndTable
+        screens.EndTable,
+        screens.Quit,
     )
     pygame.display.set_caption(config.game_name)
     while True:

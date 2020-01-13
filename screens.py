@@ -94,32 +94,69 @@ class MainMenu(Screen):
     )
 
     circles_images = {
-        'new_game': utils.crop_image(utils.load_image(config.images['circles'], False), pygame.Rect(0, 0, 225, 225))
+        'classic': utils.crop_image(utils.load_image(config.images['circles'], False), pygame.Rect(1125, 0, 231, 227)),
+        'arcade': utils.crop_image(utils.load_image(config.images['circles'], False), pygame.Rect(16, 242, 200, 200)),
+        'quit': utils.crop_image(utils.load_image(config.images['circles'], False), pygame.Rect(692, 20, 190, 190)),
+        'shop': utils.crop_image(utils.load_image(config.images['circles'], False), pygame.Rect(1142, 237, 205, 205))
     }
     circles_pos = {
-        'new_game': circles_images['new_game'].get_rect(x=144, y=144)
+        'classic': circles_images['classic'].get_rect(x=(config.width // 5), y=(config.height // 4)),
+        'arcade': circles_images['arcade'].get_rect(x=(config.width - config.width // 5), y=(config.height // 3)),
+        'quit': circles_images['quit'].get_rect(x=(config.width // 3), y=(config.height // 2)),
+        'shop': circles_images['shop'].get_rect(x=(config.width // 2), y=(config.height // 1.5))
     }
 
     fruits_pos = {
-        'new_game': (200, 200)
+        'classic': (circles_pos['classic'].x + 56, circles_pos['classic'].y + 56),
+        'arcade': (circles_pos['arcade'].x + 45, circles_pos['arcade'].y + 45),
+        'quit': (circles_pos['quit'].x + 43, circles_pos['quit'].y + 43),
+        'shop': (circles_pos['shop'].x + 40, circles_pos['shop'].y + 40)
     }
 
     def __init__(self):
         super().__init__()
         self.circles_images_editable = {
-            'new_game': self.circles_images['new_game']
+            'classic': self.circles_images['classic'],
+            'arcade': self.circles_images['arcade'],
+            'quit': self.circles_images['quit'],
+            'shop': self.circles_images['shop']
         }
         self.angle = 0
         self.angle_delta = 0.5 * 1.0 if random.random() else -1.0
+        self.next_screen = 0
+        self.active = False
 
     def reload(self) -> None:
+        self.active = True
         self.music.play()
         blades.Blade()
-        new_game_sprite = fruits.RedApple(False)
-        new_game_sprite.personal_gravity = 0
-        new_game_sprite.move(self.fruits_pos['new_game'])
+
+        classic_sprite = fruits.RedApple(False)
+        classic_sprite.personal_gravity = 0
+        classic_sprite.move(self.fruits_pos['classic'])
+        classic_sprite.screen = Game
+
+        arcade_sprite = fruits.Banana(False)
+        arcade_sprite.personal_gravity = 0
+        arcade_sprite.move(self.fruits_pos['arcade'])
+        arcade_sprite.screen = Game
+
+        quit_sprite = fruits.Lemon(False)
+        quit_sprite.personal_gravity = 0
+        quit_sprite.move(self.fruits_pos['quit'])
+        quit_sprite.screen = Quit
+
+        shop_sprite = fruits.Starfruit(False)
+        shop_sprite.personal_gravity = 0
+        shop_sprite.move(self.fruits_pos['shop'])
+        shop_sprite.screen = Game
 
     def handle_event(self, event: pygame.event.Event) -> None:
+        if event.type == MainMenu.event_change_screen:
+            self.delete_all()
+            managers.ScreensManager.set_next_screen(self.next_screen)
+        if not self.active:
+            return
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 singletons.BladesGroup.get().start_session()
@@ -128,12 +165,11 @@ class MainMenu(Screen):
                 singletons.BladesGroup.get().end_session()
         if event.type == pygame.MOUSEMOTION:
             singletons.BladesGroup.get().add_mouse_track_pos()
+            self.next_screen = singletons.BladesGroup.get().check_fruit_screen()
             has_fruit, temp = singletons.BladesGroup.get().check_fruit_cut()
             if has_fruit:
+                self.active = False
                 pygame.time.set_timer(MainMenu.event_change_screen, 1500)
-        if event.type == MainMenu.event_change_screen:
-            self.delete_all()
-            managers.ScreensManager.set_next_screen(Game)
 
     def update_screen(self, screen: pygame.Surface) -> None:
         super().update_screen(screen)
@@ -318,9 +354,9 @@ class Game(Screen):
                 self.sound_lose_life.play()
                 self.lives[managers.GameManager.get_instance().fruits_missed].set_red()
                 managers.GameManager.get_instance().fruits_missed += 1
-            else:
+            if managers.GameManager.get_instance().fruits_missed >= 3:
                 self.active = False
-                pygame.time.set_timer(Game.event_change_screen, 1000)
+                pygame.time.set_timer(Game.event_change_screen, 1500)
             number -= 1
 
     def create_fruit(self, fruit_class: str) -> None:
@@ -394,3 +430,12 @@ class EndTable(Screen):
     def draw_score(self, screen: pygame.Surface) -> None:
         screen.blit(self.score_image, self.score_rect)
         screen.blit(self.best_score_image, self.best_score_rect)
+
+
+class Quit(Screen):
+    def reload(self):
+        utils.terminate()
+
+    @classmethod
+    def get_image(cls) -> pygame.Surface:
+        return pygame.Surface((0, 0))

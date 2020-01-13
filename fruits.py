@@ -49,14 +49,16 @@ class Fruit(objects.RotatingEntity):
 class Bomb(Fruit):
     sprite_rect = pygame.Rect(0, 0, 142, 170)
 
-    def __init__(self, *groups):
-        super().__init__(*groups)
+    def __init__(self, throw_sound=True, *groups):
+        super().__init__(throw_sound, *groups)
         self._score = -10
         self.sound_throw = pygame.mixer.Sound(config.sounds['bomb_throw'])
         self.sound_cut = pygame.mixer.Sound(config.sounds['bomb_explode'])
         self.sound_use = pygame.mixer.Sound(config.sounds['bomb_use'])
-        self.sound_use.set_volume(0.1)
-        self.sound_use.play()
+        if throw_sound:
+            self.sound_use.set_volume(0.1)
+            self.sound_use.play()
+            self.sound_throw.play()
 
     def cut(self):
         sprites.FruitScore('Bomb', self.score, pygame.mouse.get_pos())
@@ -125,7 +127,7 @@ class Strawberry(Fruit):
 
 
 class Garnet(Fruit):
-    sprite_rect = pygame.Rect(508, 353, 173, 142)
+    sprite_rect = pygame.Rect(508, 353, 173, 150)
 
 
 class FrozenApple(Fruit):
