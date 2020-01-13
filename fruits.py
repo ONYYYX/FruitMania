@@ -163,7 +163,7 @@ class CoconutPart(Part):
 
 class WatermelonPart(Part):
     sprite_rect = [
-        pygame.Rect(540, 40, 114, 86),
+        pygame.Rect(522, 355, 144, 141),
         pygame.Rect(693, 358, 149, 126),
         pygame.Rect(862, 362, 144, 133),
     ]
