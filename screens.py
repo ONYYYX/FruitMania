@@ -193,9 +193,12 @@ class Game(Screen):
         'Banana',
         'Coconut',
         'Watermelon',
+        'Kiwi',
         'Lemon',
         'Lime',
+        'Mango',
         'Orange',
+        'Pear',
         'Pineapple',
         'Strawberry'
     ]

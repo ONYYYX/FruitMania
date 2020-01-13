@@ -88,6 +88,10 @@ class Watermelon(Fruit):
     sprite_rect = pygame.Rect(860, 3, 150, 164)
 
 
+class Kiwi(Fruit):
+    sprite_rect = pygame.Rect(21, 192, 138, 130)
+
+
 class Lemon(Fruit):
     sprite_rect = pygame.Rect(211, 203, 89, 105)
 
@@ -96,16 +100,36 @@ class Lime(Fruit):
     sprite_rect = pygame.Rect(365, 195, 118, 118)
 
 
+class Mango(Fruit):
+    sprite_rect = pygame.Rect(522, 189, 144, 131)
+
+
 class Orange(Fruit):
     sprite_rect = pygame.Rect(704, 196, 121, 123)
+
+
+class Pear(Fruit):
+    sprite_rect = pygame.Rect(850, 183, 148, 148)
 
 
 class Pineapple(Fruit):
     sprite_rect = pygame.Rect(5, 334, 154, 176)
 
 
+class Starfruit(Fruit):
+    sprite_rect = pygame.Rect(194, 358, 128, 133)
+
+
 class Strawberry(Fruit):
     sprite_rect = pygame.Rect(370, 363, 108, 125)
+
+
+class Garnet(Fruit):
+    sprite_rect = pygame.Rect(508, 353, 173, 142)
+
+
+class FrozenApple(Fruit):
+    sprite_rect = pygame.Rect(680, 353, 172, 145)
 
 
 class Part(objects.RotatingEntity):
@@ -169,6 +193,14 @@ class WatermelonPart(Part):
     ]
 
 
+class KiwiPart(Part):
+    sprite_rect = [
+        pygame.Rect(21, 538, 133, 118),
+        pygame.Rect(190, 533, 143, 118),
+        pygame.Rect(356, 541, 136, 115),
+    ]
+
+
 class LemonPart(Part):
     sprite_rect = [
         pygame.Rect(529, 540, 129, 110),
@@ -185,11 +217,27 @@ class LimePart(Part):
     ]
 
 
+class MangoPart(Part):
+    sprite_rect = [
+        pygame.Rect(531, 710, 125, 105),
+        pygame.Rect(712, 720, 116, 105),
+        pygame.Rect(864, 715, 135, 110),
+    ]
+
+
 class OrangePart(Part):
     sprite_rect = [
         pygame.Rect(20, 872, 126, 118),
         pygame.Rect(184, 883, 143, 106),
         pygame.Rect(349, 876, 150, 120),
+    ]
+
+
+class PearPart(Part):
+    sprite_rect = [
+        pygame.Rect(525, 859, 139, 153),
+        pygame.Rect(692, 879, 136, 110),
+        pygame.Rect(853, 864, 157, 125),
     ]
 
 
@@ -201,9 +249,31 @@ class PineapplePart(Part):
     ]
 
 
+class StarfruitPart(Part):
+    sprite_rect = [
+        pygame.Rect(520, 1051, 139, 125),
+        pygame.Rect(695, 1038, 140, 131),
+        pygame.Rect(866, 1048, 146, 128),
+    ]
+
+
 class StrawberryPart(Part):
     sprite_rect = [
         pygame.Rect(33, 1207, 105, 138),
         pygame.Rect(200, 1203, 105, 142),
         pygame.Rect(374, 1203, 103, 142),
+    ]
+
+
+class GarnetPart(Part):
+    sprite_rect = [
+        pygame.Rect(505, 1210, 174, 143),
+        pygame.Rect(684, 1212, 149, 139),
+        pygame.Rect(851, 1210, 164, 146),
+    ]
+
+
+class FrozenApplePart(Part):
+    sprite_rect = [
+        pygame.Rect(18, 1379, 131, 125)
     ]
