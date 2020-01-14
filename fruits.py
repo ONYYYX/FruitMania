@@ -2,6 +2,7 @@ import sys
 import random
 import pygame
 import singletons
+import screens
 import objects
 import sprites
 import utils
@@ -132,6 +133,16 @@ class Garnet(Fruit):
 
 class FrozenApple(Fruit):
     sprite_rect = pygame.Rect(680, 353, 172, 145)
+
+    def __init__(self, throw_sound=True, *groups):
+        super().__init__(throw_sound, *groups)
+        self.sound_impact = pygame.mixer.Sound(config.sounds['fruit_impact'])
+
+    def cut(self):
+        self.sound_impact.play()
+        pygame.time.set_timer(screens.Arcade.event_start_freeze, 1)
+        pygame.time.set_timer(screens.Arcade.event_remove_freeze, 5000)
+        super().cut()
 
 
 class Part(objects.RotatingEntity):
