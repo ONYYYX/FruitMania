@@ -8,9 +8,9 @@ class Game:
         self._fruits_missed = 0
         self._critical_combo_num = 0
 
-    def reload(self) -> None:
+    def reload(self, mode) -> None:
         self.score = 0
-        self.best_score = managers.DatabaseManager.get_instance().get_best_score()
+        self.best_score = managers.DatabaseManager.get_instance().get_best_score(mode)
         self.fruits_missed = 0
         self.critical_combo = 0
 

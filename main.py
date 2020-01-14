@@ -11,7 +11,8 @@ def main() -> None:
     managers.ScreensManager.set_screens(
         screens.Loading,
         screens.MainMenu,
-        screens.Game,
+        screens.Classic,
+        screens.Arcade,
         screens.EndTable,
         screens.Quit,
     )

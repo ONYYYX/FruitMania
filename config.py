@@ -2,7 +2,9 @@ fps = 60
 width = 1920
 height = 1080
 gravity = 10
+freeze_gravity = 0
 blade_size = (3, 3)
+arcade_time = 90
 game_name = 'Fruit Mania'
 
 # Resources
@@ -16,6 +18,7 @@ sounds = {
     'critical': 'media/sounds/critical.ogg',
     'fruit_throw': 'media/sounds/throw-fruit.ogg',
     'fruit_cut': 'media/sounds/squash.ogg',
+    'fruit_impact': 'media/sounds/fruit-impact.ogg',
     'bomb_throw': 'media/sounds/throw-bomb.ogg',
     'bomb_explode': 'media/sounds/explosion.ogg',
     'bomb_use': 'media/sounds/bomb-fuse.ogg',
@@ -27,7 +30,7 @@ images = {
     'circles': 'screens/main_menu/circles.png',
     'fruits': 'fruits.png',
     'parts': 'parts.png',
-    'lives': 'screens/game/lives.png',
-    'splashes': 'screens/game/splashes.png',
+    'splashes': 'splashes.png',
+    'lives': 'screens/classic/lives.png',
     'table': 'screens/end_table/table.png',
 }

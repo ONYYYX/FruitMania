@@ -1,4 +1,5 @@
 import typing
+import datetime
 import random
 import pygame
 import managers
@@ -134,12 +135,12 @@ class MainMenu(Screen):
         classic_sprite = fruits.RedApple(False)
         classic_sprite.personal_gravity = 0
         classic_sprite.move(self.fruits_pos['classic'])
-        classic_sprite.screen = Game
+        classic_sprite.screen = Classic
 
         arcade_sprite = fruits.Banana(False)
         arcade_sprite.personal_gravity = 0
         arcade_sprite.move(self.fruits_pos['arcade'])
-        arcade_sprite.screen = Game
+        arcade_sprite.screen = Arcade
 
         quit_sprite = fruits.Lemon(False)
         quit_sprite.personal_gravity = 0
@@ -149,7 +150,7 @@ class MainMenu(Screen):
         shop_sprite = fruits.Starfruit(False)
         shop_sprite.personal_gravity = 0
         shop_sprite.move(self.fruits_pos['shop'])
-        shop_sprite.screen = Game
+        shop_sprite.screen = Classic
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if event.type == MainMenu.event_change_screen:
@@ -215,7 +216,8 @@ class MainMenu(Screen):
         singletons.SplashesGroup.get().empty()
 
 
-class Game(Screen):
+class Classic(Screen):
+    mode = 1
     event_change_screen = pygame.USEREVENT + 2
     event_drop_fruit = pygame.USEREVENT + 3
     event_drop_bomb = pygame.USEREVENT + 4
@@ -248,9 +250,9 @@ class Game(Screen):
         self.lives = []
 
     def reload(self) -> None:
-        managers.GameManager.get_instance().reload()
-        pygame.time.set_timer(Game.event_drop_fruit, int(random.uniform(0.5, 2.0) * 1000))
-        pygame.time.set_timer(Game.event_drop_bomb, int(random.uniform(10.0, 15.0) * 1000))
+        managers.GameManager.get_instance().reload(Classic.mode)
+        pygame.time.set_timer(Classic.event_drop_fruit, int(random.uniform(0.5, 2.0) * 1000))
+        pygame.time.set_timer(Classic.event_drop_bomb, int(random.uniform(10.0, 15.0) * 1000))
         self.sound_game_start.play()
         self.active = True
         self.blindness = 0
@@ -260,19 +262,19 @@ class Game(Screen):
         blades.Blade()
 
     def handle_event(self, event: pygame.event.Event) -> None:
-        if event.type == Game.event_change_screen:
+        if event.type == Classic.event_change_screen:
             self.delete_all()
-            managers.DatabaseManager.get_instance().add_score(managers.GameManager.get_instance().score)
-            pygame.time.set_timer(Game.event_change_screen, 0)
+            managers.DatabaseManager.get_instance().add_score(managers.GameManager.get_instance().score, Classic.mode)
+            pygame.time.set_timer(Classic.event_change_screen, 0)
             managers.ScreensManager.set_next_screen(EndTable)
         if not self.active:
             return
-        if event.type == Game.event_drop_fruit:
-            pygame.time.set_timer(Game.event_drop_fruit, int(random.uniform(0.5, 2.0) * 1000))
+        if event.type == Classic.event_drop_fruit:
+            pygame.time.set_timer(Classic.event_drop_fruit, int(random.uniform(0.5, 2.0) * 1000))
             for _ in range(random.randrange(4)):
-                self.create_fruit(random.choice(Game.fruits_classes))
-        if event.type == Game.event_drop_bomb:
-            pygame.time.set_timer(Game.event_drop_bomb, int(random.uniform(5.0, 7.0) * 1000))
+                self.create_fruit(random.choice(Classic.fruits_classes))
+        if event.type == Classic.event_drop_bomb:
+            pygame.time.set_timer(Classic.event_drop_bomb, int(random.uniform(5.0, 7.0) * 1000))
             for _ in range(random.randrange(2)):
                 self.create_fruit('Bomb')
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -356,7 +358,7 @@ class Game(Screen):
                 managers.GameManager.get_instance().fruits_missed += 1
             if managers.GameManager.get_instance().fruits_missed >= 3:
                 self.active = False
-                pygame.time.set_timer(Game.event_change_screen, 1500)
+                pygame.time.set_timer(Classic.event_change_screen, 1500)
             number -= 1
 
     def create_fruit(self, fruit_class: str) -> None:
@@ -372,11 +374,11 @@ class Game(Screen):
         self.delete_all()
         self.blindness = 240
         managers.GameManager.get_instance().critical_combo = 0
-        pygame.time.set_timer(Game.event_change_screen, 1000)
+        pygame.time.set_timer(Classic.event_change_screen, 1000)
 
     def delete_all(self) -> None:
-        pygame.time.set_timer(Game.event_drop_fruit, 0)
-        pygame.time.set_timer(Game.event_drop_bomb, 0)
+        pygame.time.set_timer(Classic.event_drop_fruit, 0)
+        pygame.time.set_timer(Classic.event_drop_bomb, 0)
         singletons.FruitsGroup.get().empty()
         singletons.PartsGroup.get().empty()
         singletons.BladesGroup.get().empty()
@@ -385,7 +387,216 @@ class Game(Screen):
         singletons.SplashesGroup.get().empty()
 
 
+class Arcade(Screen):
+    mode = 2
+    event_change_screen = pygame.USEREVENT + 1
+    event_drop_fruit = pygame.USEREVENT + 2
+    event_drop_bomb = pygame.USEREVENT + 3
+    event_drop_sweet = pygame.USEREVENT + 4
+    event_start_freeze = pygame.USEREVENT + 5
+    event_remove_freeze = pygame.USEREVENT + 6
+
+    sound_game_start = pygame.mixer.Sound(config.sounds['game_start'])
+    sound_lose_life = pygame.mixer.Sound(config.sounds['lose_life'])
+
+    fruits_classes = [
+        'RedApple',
+        'GreenApple',
+        'Banana',
+        'Coconut',
+        'Watermelon',
+        'Kiwi',
+        'Lemon',
+        'Lime',
+        'Mango',
+        'Orange',
+        'Pear',
+        'Pineapple',
+        'Strawberry'
+    ]
+
+    def __init__(self):
+        super().__init__()
+        self.active = True
+        self.freeze = False
+        self.blindness = 0
+        self.time = datetime.time()
+        self.seconds = 0
+        self.elapsed_blade_session = 0.0
+        self.elapsed_critical = 0.0
+        self.freeze_screen, self.freeze_text, self.freeze_pos = self.create_freeze()
+
+    def reload(self) -> None:
+        managers.GameManager.get_instance().reload(Arcade.mode)
+        pygame.time.set_timer(Arcade.event_drop_fruit, int(random.uniform(0.5, 2.0) * 1000))
+        pygame.time.set_timer(Arcade.event_drop_bomb, int(random.uniform(10.0, 15.0) * 1000))
+        pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
+        self.sound_game_start.play()
+        self.active = True
+        self.freeze = False
+        self.blindness = 0
+        self.time = datetime.datetime.now() + datetime.timedelta(seconds=config.arcade_time)
+        self.seconds = 0
+        self.elapsed_blade_session = 0.0
+        self.elapsed_critical = 0.0
+        blades.Blade()
+
+    def handle_event(self, event: pygame.event.Event) -> None:
+        if event.type == Arcade.event_change_screen:
+            self.delete_all()
+            managers.DatabaseManager.get_instance().add_score(managers.GameManager.get_instance().score, Arcade.mode)
+            pygame.time.set_timer(Arcade.event_change_screen, 0)
+            managers.ScreensManager.set_next_screen(EndTable)
+        if not self.active:
+            return
+        if event.type == Arcade.event_drop_fruit:
+            pygame.time.set_timer(Arcade.event_drop_fruit, int(random.uniform(0.5, 2.0) * 1000))
+            for _ in range(random.randrange(4)):
+                self.create_fruit(random.choice(Arcade.fruits_classes))
+        if event.type == Arcade.event_drop_bomb:
+            pygame.time.set_timer(Arcade.event_drop_bomb, int(random.uniform(3.0, 7.0) * 1000))
+            for _ in range(random.randrange(3)):
+                self.create_fruit('Bomb')
+        if event.type == Arcade.event_drop_sweet:
+            pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
+            self.create_fruit('FrozenApple')
+        if event.type == Arcade.event_start_freeze:
+            pygame.time.set_timer(Arcade.event_drop_sweet, 0)
+            pygame.time.set_timer(Arcade.event_start_freeze, 0)
+            self.freeze = True
+        if event.type == Arcade.event_remove_freeze:
+            pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
+            self.freeze = False
+            pygame.time.set_timer(Arcade.event_remove_freeze, 0)
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                singletons.BladesGroup.get().start_session()
+        if event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                singletons.BladesGroup.get().end_session()
+        if event.type == pygame.MOUSEMOTION:
+            singletons.BladesGroup.get().add_mouse_track_pos()
+            has_fruit, has_bomb = singletons.BladesGroup.get().check_fruit_cut()
+            if has_fruit and not has_bomb:
+                managers.GameManager.get_instance().critical_combo += 1
+                self.elapsed_critical = 0.0
+            if has_bomb:
+                self.explode_bomb()
+
+    def update_screen(self, screen: pygame.Surface) -> None:
+        super().update_screen(screen)
+        singletons.SplashesGroup.get().update()
+        singletons.SplashesGroup.get().draw(screen)
+        singletons.PartsGroup.get().update()
+        singletons.PartsGroup.get().delete_invisible()
+        singletons.PartsGroup.get().draw(screen)
+        singletons.FruitsGroup.get().update()
+        singletons.FruitsGroup.get().delete_invisible()
+        singletons.FruitsGroup.get().draw(screen)
+        singletons.BladesGroup.get().update(screen)
+        singletons.ScoresGroup.get().update()
+        singletons.ScoresGroup.get().draw(screen)
+        self.draw_blindness(screen)
+        self.draw_freeze(screen)
+        self.draw_score(screen)
+        self.draw_best_score(screen)
+        self.draw_timer(screen)
+
+    def loop_post(self, elapsed: float) -> None:
+        self.elapsed_blade_session += elapsed
+        if self.elapsed_blade_session >= 1.0:
+            self.elapsed_blade_session = 0.0
+            singletons.BladesGroup.get().end_session()
+            if pygame.mouse.get_pressed()[0]:
+                singletons.BladesGroup.get().start_session()
+        self.elapsed_critical += elapsed
+        if self.elapsed_critical >= 1.0:
+            if managers.GameManager.get_instance().critical_combo > 3:
+                sprites.CenteredFruitScore('Critical', managers.GameManager.get_instance().critical_combo * 2)
+                pygame.mixer.Sound(config.sounds['critical']).play()
+            self.elapsed_critical = 0.0
+            managers.GameManager.get_instance().critical_combo = 0
+
+    def draw_blindness(self, screen: pygame.Surface):
+        if self.blindness:
+            surface = pygame.Surface((config.width, config.height))
+            surface = surface.convert_alpha(surface)
+            surface.fill((255, 255, 255, self.blindness))
+            screen.blit(surface, (0, 0))
+            self.blindness -= 2
+
+    def create_freeze(self):
+        surface = pygame.Surface((config.width, config.height))
+        surface = surface.convert_alpha(surface)
+        surface.fill((10, 10, 150, 100))
+        font = pygame.font.Font(config.game_font, 60)
+        text = font.render('Effect: Freeze', 1, (10, 10, 200))
+        pos = (config.width // 2 - text.get_rect().w // 2, config.height // 10)
+        return surface, text, pos
+
+    def draw_freeze(self, screen: pygame.Surface):
+        if self.freeze:
+            screen.blit(self.freeze_screen, (0, 0))
+            screen.blit(self.freeze_text, self.freeze_pos)
+
+    def draw_score(self, screen: pygame.Surface) -> None:
+        font = pygame.font.Font(config.game_font, 30)
+        text = font.render(f'Score: {managers.GameManager.get_instance().score}', 1, (200, 100, 10))
+        screen.blit(text, (20, 20))
+
+    def draw_best_score(self, screen: pygame.Surface) -> None:
+        font = pygame.font.Font(config.game_font, 30)
+        text = font.render(f'Best: {managers.GameManager.get_instance().best_score}', 1, (200, 100, 10))
+        screen.blit(text, (20, 60))
+
+    def draw_timer(self, screen: pygame.Surface) -> None:
+        font = pygame.font.Font(config.game_font, 30)
+        if self.active:
+            self.seconds = (self.time - datetime.datetime.now()).total_seconds()
+        minutes = int((self.seconds % 3600) / 60)
+        seconds = int(self.seconds % 60)
+        text = font.render(f'{minutes}:{str(seconds).rjust(2, "0")}', 1, (200, 100, 10))
+        screen.blit(text, (200, 20))
+        if not minutes and not seconds and self.active:
+            self.active = False
+            pygame.time.set_timer(Arcade.event_change_screen, 1500)
+
+    def create_fruit(self, fruit_class: str) -> None:
+        if self.active:
+            fruit = getattr(fruits, fruit_class)()
+            x, y = random.randrange(config.width), config.height + 50
+            fruit.move((x, y))
+            x_vel = random.randint(100, 400) * (-1 if fruit.rect.x > config.width // 2 else 1)
+            y_vel = random.randint(-1000, -500)
+            fruit.velocity = (x_vel, y_vel)
+
+    def explode_bomb(self) -> None:
+        self.clear_sprites()
+        self.blindness = 240
+        managers.GameManager.get_instance().critical_combo = 0
+        pygame.time.set_timer(Arcade.event_drop_fruit, int(random.uniform(7.0, 8.0) * 1000))
+        pygame.time.set_timer(Arcade.event_drop_bomb, int(random.uniform(7.0, 8.0) * 1000))
+        pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
+        pygame.time.set_timer(Arcade.event_remove_freeze, 1)
+
+    def clear_sprites(self):
+        singletons.FruitsGroup.get().empty()
+        singletons.PartsGroup.get().empty()
+
+    def delete_all(self) -> None:
+        pygame.time.set_timer(Arcade.event_drop_fruit, 0)
+        pygame.time.set_timer(Arcade.event_drop_bomb, 0)
+        pygame.time.set_timer(Arcade.event_drop_sweet, 0)
+        pygame.time.set_timer(Arcade.event_remove_freeze, 1)
+        singletons.FruitsGroup.get().empty()
+        singletons.PartsGroup.get().empty()
+        singletons.BladesGroup.get().empty()
+        singletons.ScoresGroup.get().empty()
+        singletons.SplashesGroup.get().empty()
+
+
 class EndTable(Screen):
+    event_change_screen = pygame.USEREVENT + 1
     table_image = utils.load_image(config.images['table'])
     font = pygame.font.Font(config.game_font, 30)
     sound_game_over = pygame.mixer.Sound(config.sounds['game_over'])
@@ -413,11 +624,11 @@ class EndTable(Screen):
         self.best_score_rect.y -= (self.table_rect.h // 8 * 1)
 
     def handle_event(self, event: pygame.event.Event) -> None:
-        if event.type == Game.event_change_screen:
-            pygame.time.set_timer(Game.event_change_screen, 0)
+        if event.type == EndTable.event_change_screen:
+            pygame.time.set_timer(EndTable.event_change_screen, 0)
             managers.ScreensManager.set_next_screen(MainMenu)
         if event.type == pygame.MOUSEBUTTONDOWN:
-            pygame.time.set_timer(Game.event_change_screen, 1000)
+            pygame.time.set_timer(EndTable.event_change_screen, 1000)
 
     def update_screen(self, screen: pygame.Surface) -> None:
         super().update_screen(screen)

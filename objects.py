@@ -7,7 +7,6 @@ import config
 
 class Entity(pygame.sprite.Sprite):
     image: pygame.Surface = 0
-    gravity = config.gravity
     sprite_rect = pygame.Rect((0, 0, 0, 0))
 
     def __init__(self, *groups):
@@ -46,7 +45,7 @@ class Entity(pygame.sprite.Sprite):
 
     @classmethod
     def get_gravity(cls):
-        return cls.gravity
+        return config.gravity
 
     @classmethod
     def set_gravity(cls, value):
