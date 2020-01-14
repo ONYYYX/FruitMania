@@ -10,6 +10,10 @@ class Blade(pygame.sprite.Sprite):
     def __init__(self, *groups):
         super().__init__(singletons.BladesGroup.get(), *groups)
         self._session_started = False
+        self.image = pygame.Surface(config.blade_size)
+        self.image.fill((255, 255, 255))
+        self.image.set_colorkey((0, 0, 0))
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = pygame.Rect(0, 0, *config.blade_size)
         self.cut_fruits = []
         self.mouse_track = []
@@ -99,4 +103,6 @@ class Blade(pygame.sprite.Sprite):
     def update(self, *args):
         self.rect.x, self.rect.y = pygame.mouse.get_pos()
         self.create_particles(args[0])
+        if self.session_started:
+            args[0].blit(self.image, self.rect)
 

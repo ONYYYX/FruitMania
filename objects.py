@@ -68,11 +68,13 @@ class RotatingEntity(Entity):
         super().__init__(*groups)
         self._angle = 0
         self._angle_delta = random.uniform(-2.0, 2.0)
+        self.mask = pygame.mask.from_surface(self.image)
 
     def update(self, *args):
         super().update(*args)
         self.image = pygame.transform.rotate(self.get_image(), self.angle)
         self.rect = self.image.get_rect(center=self.rect.center)
+        self.mask = pygame.mask.from_surface(self.image)
         self.angle = self.angle + self.angle_delta
 
     @property

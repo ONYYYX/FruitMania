@@ -30,8 +30,8 @@ def load_image(name: str, convert: bool = True) -> pygame.Surface:
 
 def crop_image(image: pygame.Surface, rect: pygame.Rect) -> pygame.Surface:
     cropped = pygame.Surface(rect.size).convert()
-    cropped.set_colorkey((0, 0, 0))
     cropped.blit(image, (0, 0), rect)
+    cropped.set_colorkey((0, 0, 0))
     return cropped
 
 

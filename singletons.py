@@ -69,7 +69,7 @@ class _BladesGroup(_Group):
         has_fruit, has_bomb = False, False
         for blade in self.sprites():
             if blade.session_started:
-                fruit = pygame.sprite.spritecollideany(blade, FruitsGroup.get())
+                fruit = pygame.sprite.spritecollideany(blade, FruitsGroup.get(), pygame.sprite.collide_mask)
                 if fruit:
                     blade.add_cut_fruit(fruit)
                     if isinstance(fruit, fruits.Bomb):
