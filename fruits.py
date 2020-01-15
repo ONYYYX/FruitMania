@@ -1,6 +1,7 @@
 import sys
 import random
 import pygame
+import managers
 import singletons
 import screens
 import objects
@@ -122,6 +123,11 @@ class Pineapple(Fruit):
 class Starfruit(Fruit):
     sprite_rect = pygame.Rect(194, 358, 128, 133)
 
+    def cut(self):
+        managers.ScreensManager.get_screen(screens.Arcade).set_double(True)
+        pygame.time.set_timer(screens.Arcade.event_stop_double, 7000)
+        super().cut()
+
 
 class Strawberry(Fruit):
     sprite_rect = pygame.Rect(370, 363, 108, 125)
@@ -130,17 +136,17 @@ class Strawberry(Fruit):
 class Garnet(Fruit):
     sprite_rect = pygame.Rect(508, 353, 173, 150)
 
+    def cut(self):
+        managers.ScreensManager.get_screen(screens.Arcade).set_blitz(True)
+        pygame.time.set_timer(screens.Arcade.event_stop_blitz, 7000)
+        super().cut()
+
 
 class FrozenApple(Fruit):
     sprite_rect = pygame.Rect(680, 353, 172, 145)
 
-    def __init__(self, throw_sound=True, *groups):
-        super().__init__(throw_sound, *groups)
-        self.sound_impact = pygame.mixer.Sound(config.sounds['fruit_impact'])
-
     def cut(self):
-        self.sound_impact.play()
-        pygame.time.set_timer(screens.Arcade.event_start_freeze, 1)
+        managers.ScreensManager.get_screen(screens.Arcade).set_freeze(True)
         pygame.time.set_timer(screens.Arcade.event_remove_freeze, 5000)
         super().cut()
 

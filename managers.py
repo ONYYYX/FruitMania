@@ -22,6 +22,10 @@ class ScreensManager:
         for screen in screen_sequence:
             cls.screen_dictionary[screen] = screen()
 
+    @classmethod
+    def get_screen(cls, screen: typing.Type[screens.Screen]) -> screens.Screen:
+        return cls.screen_dictionary[screen]
+
 
 class GameManager:
     game_instance: game.Game = game.Game()

@@ -139,7 +139,7 @@ class MainMenu(Screen):
         arcade_sprite.move(self.fruits_pos['arcade'])
         arcade_sprite.screen = Arcade
 
-        quit_sprite = fruits.Starfruit(False)
+        quit_sprite = fruits.Mango(False)
         quit_sprite.personal_gravity = 0
         quit_sprite.move(self.fruits_pos['quit'])
         quit_sprite.screen = Quit
@@ -381,15 +381,20 @@ class Classic(Screen):
 
 class Arcade(Screen):
     mode = 2
-    event_change_screen = pygame.USEREVENT + 1
-    event_drop_fruit = pygame.USEREVENT + 2
-    event_drop_bomb = pygame.USEREVENT + 3
-    event_drop_sweet = pygame.USEREVENT + 4
-    event_start_freeze = pygame.USEREVENT + 5
-    event_remove_freeze = pygame.USEREVENT + 6
+    event_change_screen = pygame.USEREVENT + 0
+    event_drop_fruit = pygame.USEREVENT + 1
+    event_drop_bomb = pygame.USEREVENT + 2
+    event_drop_sweet = pygame.USEREVENT + 3
+    event_remove_freeze = pygame.USEREVENT + 4
+    event_stop_blitz = pygame.USEREVENT + 5
+    event_stop_double = pygame.USEREVENT + 6
 
     sound_game_start = pygame.mixer.Sound(config.sounds['game_start'])
     sound_lose_life = pygame.mixer.Sound(config.sounds['lose_life'])
+    sound_freeze = pygame.mixer.Sound(config.sounds['fruit_impact'])
+    sound_blitz = pygame.mixer.Sound(config.sounds['combo_blitz'])
+    sound_blitz_end = pygame.mixer.Sound(config.sounds['combo_blitz_end'])
+    sound_double = pygame.mixer.Sound(config.sounds['double'])
 
     fruits_classes = [
         'RedApple',
@@ -410,13 +415,14 @@ class Arcade(Screen):
     def __init__(self):
         super().__init__()
         self.active = True
-        self.freeze = False
         self.blindness = 0
         self.time = datetime.time()
         self.seconds = 0
         self.elapsed_blade_session = 0.0
         self.elapsed_critical = 0.0
         self.freeze_screen, self.freeze_text, self.freeze_pos = self.create_freeze()
+        self.blitz_screen, self.blitz_text, self.blitz_pos = self.create_blitz()
+        self.double_screen, self.double_text, self.double_pos = self.create_double()
 
     def reload(self) -> None:
         managers.GameManager.get_instance().reload(Arcade.mode)
@@ -425,7 +431,6 @@ class Arcade(Screen):
         pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
         self.sound_game_start.play()
         self.active = True
-        self.freeze = False
         self.blindness = 0
         self.time = datetime.datetime.now() + datetime.timedelta(seconds=config.arcade_time)
         self.seconds = 0
@@ -442,7 +447,10 @@ class Arcade(Screen):
         if not self.active:
             return
         if event.type == Arcade.event_drop_fruit:
-            pygame.time.set_timer(Arcade.event_drop_fruit, int(random.uniform(0.5, 2.0) * 1000))
+            if managers.GameManager.get_instance().blitz:
+                pygame.time.set_timer(Arcade.event_drop_fruit, int(0.3 * 1000))
+            else:
+                pygame.time.set_timer(Arcade.event_drop_fruit, int(random.uniform(0.5, 2.0) * 1000))
             for _ in range(random.randrange(4)):
                 self.create_fruit(random.choice(Arcade.fruits_classes))
         if event.type == Arcade.event_drop_bomb:
@@ -451,17 +459,19 @@ class Arcade(Screen):
                 self.create_fruit('Bomb')
         if event.type == Arcade.event_drop_sweet:
             pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
-            self.create_fruit('FrozenApple')
-        if event.type == Arcade.event_start_freeze:
-            pygame.time.set_timer(Arcade.event_drop_sweet, 0)
-            pygame.time.set_timer(Arcade.event_start_freeze, 0)
-            config.freeze_gravity = config.gravity // 2
-            self.freeze = True
+            n = random.randrange(99)
+            if n % 2 == 0:
+                self.create_fruit('FrozenApple')
+            elif n % 3 == 0:
+                self.create_fruit('Starfruit')
+            else:
+                self.create_fruit('Garnet')
         if event.type == Arcade.event_remove_freeze:
-            pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
-            config.freeze_gravity = 0
-            self.freeze = False
-            pygame.time.set_timer(Arcade.event_remove_freeze, 0)
+            self.set_freeze(False)
+        if event.type == Arcade.event_stop_blitz:
+            self.set_blitz(False)
+        if event.type == Arcade.event_stop_double:
+            self.set_double(False)
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 singletons.BladesGroup.get().start_session()
@@ -492,6 +502,8 @@ class Arcade(Screen):
         singletons.ScoresGroup.get().draw(screen)
         self.draw_blindness(screen)
         self.draw_freeze(screen)
+        self.draw_blitz(screen)
+        self.draw_double(screen)
         self.draw_score(screen)
         self.draw_best_score(screen)
         self.draw_timer(screen)
@@ -519,19 +531,84 @@ class Arcade(Screen):
             screen.blit(surface, (0, 0))
             self.blindness -= 2
 
+    def set_freeze(self, enabled: bool) -> None:
+        if enabled:
+            pygame.time.set_timer(Arcade.event_drop_sweet, 0)
+            config.freeze_gravity = config.gravity // 2
+            managers.GameManager.get_instance().freeze = True
+            self.sound_freeze.play()
+        else:
+            pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
+            config.freeze_gravity = 0
+            managers.GameManager.get_instance().freeze = False
+            pygame.time.set_timer(Arcade.event_remove_freeze, 0)
+
     def create_freeze(self):
         surface = pygame.Surface((config.width, config.height))
         surface = surface.convert_alpha(surface)
         surface.fill((10, 10, 150, 100))
         font = pygame.font.Font(config.game_font, 60)
-        text = font.render('Effect: Freeze', 1, (10, 10, 200))
+        text = font.render('Freeze Time', 1, (10, 10, 200))
         pos = (config.width // 2 - text.get_rect().w // 2, config.height // 10)
         return surface, text, pos
 
     def draw_freeze(self, screen: pygame.Surface):
-        if self.freeze:
+        if managers.GameManager.get_instance().freeze:
             screen.blit(self.freeze_screen, (0, 0))
             screen.blit(self.freeze_text, self.freeze_pos)
+
+    def set_blitz(self, enabled: bool) -> None:
+        if enabled:
+            pygame.time.set_timer(Arcade.event_drop_bomb, 0)
+            pygame.time.set_timer(Arcade.event_drop_sweet, 0)
+            pygame.time.set_timer(Arcade.event_drop_fruit, int(0.1 * 1000))
+            managers.GameManager.get_instance().blitz = True
+            self.sound_blitz.play(-1)
+        else:
+            pygame.time.set_timer(Arcade.event_drop_bomb, int(random.uniform(3.0, 7.0) * 1000))
+            pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
+            pygame.time.set_timer(Arcade.event_stop_blitz, 0)
+            managers.GameManager.get_instance().blitz = False
+            self.sound_blitz.stop()
+            self.sound_blitz_end.play()
+
+    def create_blitz(self):
+        surface = pygame.Surface((config.width, config.height))
+        surface = surface.convert_alpha(surface)
+        surface.fill((10, 10, 10, 30))
+        font = pygame.font.Font(config.game_font, 60)
+        text = font.render('Blitz Time', 1, (10, 140, 150))
+        pos = (config.width // 2 - text.get_rect().w // 2, config.height // 9)
+        return surface, text, pos
+
+    def draw_blitz(self, screen: pygame.Surface):
+        if managers.GameManager.get_instance().blitz:
+            screen.blit(self.blitz_screen, (0, 0))
+            screen.blit(self.blitz_text, self.blitz_pos)
+
+    def set_double(self, enabled: bool) -> None:
+        if enabled:
+            pygame.time.set_timer(Arcade.event_drop_sweet, 0)
+            managers.GameManager.get_instance().double = True
+            self.sound_double.play()
+        else:
+            pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
+            pygame.time.set_timer(Arcade.event_stop_double, 0)
+            managers.GameManager.get_instance().double = False
+
+    def create_double(self):
+        surface = pygame.Surface((config.width, config.height))
+        surface = surface.convert_alpha(surface)
+        surface.fill((100, 10, 150, 30))
+        font = pygame.font.Font(config.game_font, 60)
+        text = font.render('Double Score', 1, (100, 20, 150))
+        pos = (config.width // 2 - text.get_rect().w // 2, config.height // 8)
+        return surface, text, pos
+
+    def draw_double(self, screen: pygame.Surface):
+        if managers.GameManager.get_instance().double:
+            screen.blit(self.double_screen, (0, 0))
+            screen.blit(self.double_text, self.double_pos)
 
     def draw_score(self, screen: pygame.Surface) -> None:
         font = pygame.font.Font(config.game_font, 30)
@@ -558,11 +635,17 @@ class Arcade(Screen):
     def create_fruit(self, fruit_class: str) -> None:
         if self.active:
             fruit = getattr(fruits, fruit_class)()
-            x, y = random.randrange(config.width), config.height + 1
-            fruit.move((x, y))
-            x_vel = random.randint(100, 400) * (-1 if fruit.rect.x > config.width // 2 else 1)
-            y_vel = random.randint(-700, -500)
-            if self.freeze:
+            if managers.GameManager.get_instance().blitz:
+                x, y = -100 if random.randrange(2) else config.width + 50, config.height // 2
+                fruit.move((x, y))
+                x_vel = random.randint(300, 400) * (-1 if fruit.rect.x > config.width // 2 else 1)
+                y_vel = random.randint(-300, -200)
+            else:
+                x, y = random.randrange(config.width), config.height + 1
+                fruit.move((x, y))
+                x_vel = random.randint(100, 400) * (-1 if fruit.rect.x > config.width // 2 else 1)
+                y_vel = random.randint(-700, -500)
+            if managers.GameManager.get_instance().freeze:
                 x_vel = math.ceil(x_vel / (config.gravity / config.freeze_gravity))
                 y_vel = math.ceil(y_vel / (config.gravity / config.freeze_gravity))
             fruit.velocity = (x_vel, y_vel)

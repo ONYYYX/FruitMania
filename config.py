@@ -22,6 +22,9 @@ sounds = {
     'bomb_throw': 'media/sounds/throw-bomb.ogg',
     'bomb_explode': 'media/sounds/explosion.ogg',
     'bomb_use': 'media/sounds/bomb-fuse.ogg',
+    'combo_blitz': 'media/sounds/combo-blitz.ogg',
+    'combo_blitz_end': 'media/sounds/combo-blitz-end.ogg',
+    'double': 'media/sounds/double.ogg',
 }
 images = {
     'fruit_label': 'screens/main_menu/label_fruit.png',
