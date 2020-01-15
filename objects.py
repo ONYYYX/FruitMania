@@ -18,11 +18,21 @@ class Entity(pygame.sprite.Sprite):
 
     @property
     def velocity(self):
-        return self._velocity
+        x, y = self._velocity
+        if config.freeze_gravity:
+            divider = config.gravity / config.freeze_gravity
+            x = math.ceil(x / divider)
+            y = math.ceil(y / divider)
+        return x, y
 
     @velocity.setter
     def velocity(self, value):
-        self._velocity = value
+        x, y = value
+        if config.freeze_gravity:
+            divider = config.gravity // config.freeze_gravity
+            x *= divider
+            y *= divider
+        self._velocity = x, y
 
     @property
     def personal_gravity(self):
@@ -45,7 +55,7 @@ class Entity(pygame.sprite.Sprite):
 
     @classmethod
     def get_gravity(cls):
-        return config.gravity
+        return config.gravity if not config.freeze_gravity else config.freeze_gravity
 
     @classmethod
     def set_gravity(cls, value):

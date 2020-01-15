@@ -1,4 +1,5 @@
 import typing
+import math
 import datetime
 import random
 import pygame
@@ -97,21 +98,18 @@ class MainMenu(Screen):
     circles_images = {
         'classic': utils.crop_image(utils.load_image(config.images['circles'], False), pygame.Rect(1125, 0, 231, 227)),
         'arcade': utils.crop_image(utils.load_image(config.images['circles'], False), pygame.Rect(16, 242, 200, 200)),
-        'quit': utils.crop_image(utils.load_image(config.images['circles'], False), pygame.Rect(692, 20, 190, 190)),
-        'shop': utils.crop_image(utils.load_image(config.images['circles'], False), pygame.Rect(1142, 237, 205, 205))
+        'quit': utils.crop_image(utils.load_image(config.images['circles'], False), pygame.Rect(692, 20, 190, 190))
     }
     circles_pos = {
         'classic': circles_images['classic'].get_rect(x=(config.width // 5), y=(config.height // 4)),
         'arcade': circles_images['arcade'].get_rect(x=(config.width - config.width // 5), y=(config.height // 3)),
-        'quit': circles_images['quit'].get_rect(x=(config.width // 3), y=(config.height // 2)),
-        'shop': circles_images['shop'].get_rect(x=(config.width // 2), y=(config.height // 1.5))
+        'quit': circles_images['quit'].get_rect(x=(config.width // 2), y=(config.height - config.height // 3))
     }
 
     fruits_pos = {
         'classic': (circles_pos['classic'].x + 56, circles_pos['classic'].y + 56),
         'arcade': (circles_pos['arcade'].x + 45, circles_pos['arcade'].y + 45),
-        'quit': (circles_pos['quit'].x + 43, circles_pos['quit'].y + 43),
-        'shop': (circles_pos['shop'].x + 40, circles_pos['shop'].y + 40)
+        'quit': (circles_pos['quit'].x + 35, circles_pos['quit'].y + 35)
     }
 
     def __init__(self):
@@ -119,8 +117,7 @@ class MainMenu(Screen):
         self.circles_images_editable = {
             'classic': self.circles_images['classic'],
             'arcade': self.circles_images['arcade'],
-            'quit': self.circles_images['quit'],
-            'shop': self.circles_images['shop']
+            'quit': self.circles_images['quit']
         }
         self.angle = 0
         self.angle_delta = 0.5 * 1.0 if random.random() else -1.0
@@ -142,15 +139,10 @@ class MainMenu(Screen):
         arcade_sprite.move(self.fruits_pos['arcade'])
         arcade_sprite.screen = Arcade
 
-        quit_sprite = fruits.Lemon(False)
+        quit_sprite = fruits.Starfruit(False)
         quit_sprite.personal_gravity = 0
         quit_sprite.move(self.fruits_pos['quit'])
         quit_sprite.screen = Quit
-
-        shop_sprite = fruits.Starfruit(False)
-        shop_sprite.personal_gravity = 0
-        shop_sprite.move(self.fruits_pos['shop'])
-        shop_sprite.screen = Classic
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if event.type == MainMenu.event_change_screen:
@@ -463,9 +455,11 @@ class Arcade(Screen):
         if event.type == Arcade.event_start_freeze:
             pygame.time.set_timer(Arcade.event_drop_sweet, 0)
             pygame.time.set_timer(Arcade.event_start_freeze, 0)
+            config.freeze_gravity = config.gravity // 2
             self.freeze = True
         if event.type == Arcade.event_remove_freeze:
             pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
+            config.freeze_gravity = 0
             self.freeze = False
             pygame.time.set_timer(Arcade.event_remove_freeze, 0)
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -564,10 +558,13 @@ class Arcade(Screen):
     def create_fruit(self, fruit_class: str) -> None:
         if self.active:
             fruit = getattr(fruits, fruit_class)()
-            x, y = random.randrange(config.width), config.height + 50
+            x, y = random.randrange(config.width), config.height + 1
             fruit.move((x, y))
             x_vel = random.randint(100, 400) * (-1 if fruit.rect.x > config.width // 2 else 1)
-            y_vel = random.randint(-1000, -500)
+            y_vel = random.randint(-700, -500)
+            if self.freeze:
+                x_vel = math.ceil(x_vel / (config.gravity / config.freeze_gravity))
+                y_vel = math.ceil(y_vel / (config.gravity / config.freeze_gravity))
             fruit.velocity = (x_vel, y_vel)
 
     def explode_bomb(self) -> None:

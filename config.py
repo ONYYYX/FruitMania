@@ -1,6 +1,6 @@
 fps = 60
-width = 1920
-height = 1080
+width = 1280
+height = 720
 gravity = 10
 freeze_gravity = 0
 blade_size = (3, 3)
