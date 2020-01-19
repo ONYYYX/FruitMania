@@ -125,7 +125,7 @@ class Starfruit(Fruit):
 
     def cut(self):
         managers.ScreensManager.get_screen(screens.Arcade).set_double(True)
-        pygame.time.set_timer(screens.Arcade.event_stop_double, 7000)
+        pygame.time.set_timer(screens.Arcade.event_stop_double, config.arcade_double_time)
         super().cut()
 
 
@@ -138,7 +138,7 @@ class Garnet(Fruit):
 
     def cut(self):
         managers.ScreensManager.get_screen(screens.Arcade).set_blitz(True)
-        pygame.time.set_timer(screens.Arcade.event_stop_blitz, 7000)
+        pygame.time.set_timer(screens.Arcade.event_stop_blitz, config.arcade_blitz_time)
         super().cut()
 
 
@@ -147,7 +147,7 @@ class FrozenApple(Fruit):
 
     def cut(self):
         managers.ScreensManager.get_screen(screens.Arcade).set_freeze(True)
-        pygame.time.set_timer(screens.Arcade.event_remove_freeze, 5000)
+        pygame.time.set_timer(screens.Arcade.event_remove_freeze, config.arcade_freeze_time)
         super().cut()
 
 

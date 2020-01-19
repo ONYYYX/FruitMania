@@ -5,6 +5,9 @@ gravity = 10
 freeze_gravity = 0
 blade_size = (3, 3)
 arcade_time = 90
+arcade_freeze_time = 5000  # In milliseconds
+arcade_blitz_time = 7000  # In milliseconds
+arcade_double_time = 7000  # In milliseconds
 game_name = 'Fruit Mania'
 
 # Resources

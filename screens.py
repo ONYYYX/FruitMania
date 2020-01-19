@@ -116,7 +116,7 @@ class MainMenu(Screen):
     fruits_pos = {
         'classic': (circles_pos['classic'].x + 56, circles_pos['classic'].y + 56),
         'arcade': (circles_pos['arcade'].x + 45, circles_pos['arcade'].y + 45),
-        'quit': (circles_pos['quit'].x + 35, circles_pos['quit'].y + 35)
+        'quit': (circles_pos['quit'].x + 30, circles_pos['quit'].y + 30)
     }
 
     def __init__(self):
@@ -455,7 +455,7 @@ class Arcade(Screen):
         self.freeze_screen, self.freeze_text, self.freeze_pos = self.create_freeze()
         self.blitz_screen, self.blitz_text, self.blitz_pos = self.create_blitz()
         self.double_screen, self.double_text, self.double_pos = self.create_double()
-        self.freeze_escape_time, self.freeze_escape_time, self.freeze_escape_time = 0.0, 0.0, 0.0
+        self.freeze_escape_time, self.blitz_escape_time, self.double_escape_time = 0.0, 0.0, 0.0
         self.pause_data = list(utils.create_pause_board())
         self.pause_info = list(utils.create_pause_info((20, 100)))
 
@@ -471,7 +471,7 @@ class Arcade(Screen):
         self.elapsed_time = 0.0
         self.elapsed_blade_session = 0.0
         self.elapsed_critical = 0.0
-        self.freeze_escape_time, self.freeze_escape_time, self.freeze_escape_time = 0.0, 0.0, 0.0
+        self.freeze_escape_time, self.blitz_escape_time, self.double_escape_time = 0.0, 0.0, 0.0
         blades.Blade()
 
     def handle_event(self, event: pygame.event.Event) -> None:
@@ -535,6 +535,14 @@ class Arcade(Screen):
 
     def handle_escape_event(self) -> None:
         managers.GameManager.get_instance().pause = not managers.GameManager.get_instance().pause
+        if managers.GameManager.get_instance().pause:
+            pygame.time.set_timer(Arcade.event_remove_freeze, 0)
+            pygame.time.set_timer(Arcade.event_stop_double, 0)
+            pygame.time.set_timer(Arcade.event_stop_blitz, 0)
+        else:
+            pygame.time.set_timer(Arcade.event_remove_freeze, int(self.freeze_escape_time * 1000.0))
+            pygame.time.set_timer(Arcade.event_stop_double, int(self.double_escape_time * 1000.0))
+            pygame.time.set_timer(Arcade.event_stop_blitz, int(self.blitz_escape_time * 1000.0))
 
     def update_screen(self, screen: pygame.Surface) -> None:
         super().update_screen(screen)
@@ -583,6 +591,12 @@ class Arcade(Screen):
                 if self.elapsed_time >= 1.0:
                     self.time -= 1
                     self.elapsed_time = 0.0
+            if managers.GameManager.get_instance().freeze:
+                self.freeze_escape_time -= elapsed
+            if managers.GameManager.get_instance().double:
+                self.double_escape_time -= elapsed
+            if managers.GameManager.get_instance().blitz:
+                self.blitz_escape_time -= elapsed
 
     def update_blindness(self) -> None:
         if not managers.GameManager.get_instance().pause:
@@ -602,6 +616,7 @@ class Arcade(Screen):
             config.freeze_gravity = config.gravity // 2
             managers.GameManager.get_instance().freeze = True
             self.sound_freeze.play()
+            self.freeze_escape_time = config.arcade_freeze_time / 1000.0
         else:
             pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
             config.freeze_gravity = 0
@@ -629,6 +644,7 @@ class Arcade(Screen):
             pygame.time.set_timer(Arcade.event_drop_fruit, int(0.1 * 1000))
             managers.GameManager.get_instance().blitz = True
             self.sound_blitz.play(-1)
+            self.blitz_escape_time = config.arcade_blitz_time / 1000.0
         else:
             pygame.time.set_timer(Arcade.event_drop_bomb, int(random.uniform(3.0, 7.0) * 1000))
             pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
@@ -656,6 +672,7 @@ class Arcade(Screen):
             pygame.time.set_timer(Arcade.event_drop_sweet, 0)
             managers.GameManager.get_instance().double = True
             self.sound_double.play()
+            self.double_escape_time = config.arcade_double_time / 1000.0
         else:
             pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
             pygame.time.set_timer(Arcade.event_stop_double, 0)
