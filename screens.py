@@ -35,13 +35,20 @@ class Screen:
 
     def handle_events(self) -> None:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and pygame.key.get_pressed()[pygame.K_ESCAPE]:
+            if event.type == pygame.QUIT:
                 managers.DatabaseManager.get_instance().close()
                 utils.terminate()
-            self.handle_event(event)
+            elif event.type == pygame.KEYDOWN and pygame.key.get_pressed()[pygame.K_ESCAPE]:
+                self.handle_escape_event()
+            else:
+                self.handle_event(event)
 
     def handle_event(self, event: pygame.event.Event) -> None:
         pass  # For inheritance
+
+    def handle_escape_event(self) -> None:
+        managers.DatabaseManager.get_instance().close()
+        utils.terminate()
 
     def update_screen(self, screen: pygame.Surface) -> None:
         screen.fill((0, 0, 0))
@@ -240,6 +247,8 @@ class Classic(Screen):
         self.elapsed_blade_session = 0.0
         self.elapsed_critical = 0.0
         self.lives = []
+        self.pause_data = list(utils.create_pause_board())
+        self.pause_info = list(utils.create_pause_info((20, 100)))
 
     def reload(self) -> None:
         managers.GameManager.get_instance().reload(Classic.mode)
@@ -263,67 +272,90 @@ class Classic(Screen):
             return
         if event.type == Classic.event_drop_fruit:
             pygame.time.set_timer(Classic.event_drop_fruit, int(random.uniform(0.5, 2.0) * 1000))
-            for _ in range(random.randrange(4)):
-                self.create_fruit(random.choice(Classic.fruits_classes))
+            if not managers.GameManager.get_instance().pause:
+                for _ in range(random.randrange(4)):
+                    self.create_fruit(random.choice(Classic.fruits_classes))
         if event.type == Classic.event_drop_bomb:
             pygame.time.set_timer(Classic.event_drop_bomb, int(random.uniform(5.0, 7.0) * 1000))
-            for _ in range(random.randrange(2)):
-                self.create_fruit('Bomb')
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                singletons.BladesGroup.get().start_session()
-        if event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1:
-                singletons.BladesGroup.get().end_session()
-        if event.type == pygame.MOUSEMOTION:
-            singletons.BladesGroup.get().add_mouse_track_pos()
-            has_fruit, has_bomb = singletons.BladesGroup.get().check_fruit_cut()
-            if has_fruit and not has_bomb:
-                managers.GameManager.get_instance().critical_combo += 1
-                self.elapsed_critical = 0.0
-            if has_bomb:
-                self.explode_bomb()
+            if not managers.GameManager.get_instance().pause:
+                for _ in range(random.randrange(2)):
+                    self.create_fruit('Bomb')
+        if not managers.GameManager.get_instance().pause:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    singletons.BladesGroup.get().start_session()
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    singletons.BladesGroup.get().end_session()
+            if event.type == pygame.MOUSEMOTION:
+                singletons.BladesGroup.get().add_mouse_track_pos()
+                has_fruit, has_bomb = singletons.BladesGroup.get().check_fruit_cut()
+                if has_fruit and not has_bomb:
+                    managers.GameManager.get_instance().critical_combo += 1
+                    self.elapsed_critical = 0.0
+                if has_bomb:
+                    self.explode_bomb()
+        else:
+            if event.type == pygame.KEYDOWN:
+                if pygame.key.get_pressed()[pygame.K_LALT]:
+                    pygame.time.set_timer(Classic.event_drop_fruit, 0)
+                    pygame.time.set_timer(Classic.event_drop_bomb, 0)
+                    pygame.time.set_timer(Classic.event_change_screen, 10)
+
+    def handle_escape_event(self) -> None:
+        managers.GameManager.get_instance().pause = not managers.GameManager.get_instance().pause
 
     def update_screen(self, screen: pygame.Surface) -> None:
         super().update_screen(screen)
         self.lose_life(singletons.FruitsGroup.get().delete_invisible())
-        singletons.SplashesGroup.get().update()
+        if not managers.GameManager.get_instance().pause:
+            singletons.SplashesGroup.get().update()
+            singletons.PartsGroup.get().update()
+            singletons.FruitsGroup.get().update()
+            singletons.ScoresGroup.get().update()
+            self.update_blindness()
         singletons.SplashesGroup.get().draw(screen)
-        singletons.PartsGroup.get().update()
         singletons.PartsGroup.get().delete_invisible()
         singletons.PartsGroup.get().draw(screen)
-        singletons.FruitsGroup.get().update()
         singletons.FruitsGroup.get().draw(screen)
         singletons.BladesGroup.get().update(screen)
         singletons.LivesGroup.get().draw(screen)
-        singletons.ScoresGroup.get().update()
         singletons.ScoresGroup.get().draw(screen)
         self.draw_blindness(screen)
         self.draw_score(screen)
         self.draw_best_score(screen)
+        utils.draw_pause_info(self.pause_info, screen)
+        #  Именно тут для того, чтобы доска была поверх остального
+        if managers.GameManager.get_instance().pause:
+            utils.draw_pause_board(self.pause_data, screen)
 
     def loop_post(self, elapsed: float) -> None:
-        self.elapsed_blade_session += elapsed
-        if self.elapsed_blade_session >= 1.0:
-            self.elapsed_blade_session = 0.0
-            singletons.BladesGroup.get().end_session()
-            if pygame.mouse.get_pressed()[0]:
-                singletons.BladesGroup.get().start_session()
-        self.elapsed_critical += elapsed
-        if self.elapsed_critical >= 1.0:
-            if managers.GameManager.get_instance().critical_combo > 3:
-                sprites.CenteredFruitScore('Critical', managers.GameManager.get_instance().critical_combo * 2)
-                pygame.mixer.Sound(config.sounds['critical']).play()
-            self.elapsed_critical = 0.0
-            managers.GameManager.get_instance().critical_combo = 0
+        if not managers.GameManager.get_instance().pause:
+            self.elapsed_blade_session += elapsed
+            if self.elapsed_blade_session >= 1.0:
+                self.elapsed_blade_session = 0.0
+                singletons.BladesGroup.get().end_session()
+                if pygame.mouse.get_pressed()[0]:
+                    singletons.BladesGroup.get().start_session()
+            self.elapsed_critical += elapsed
+            if self.elapsed_critical >= 1.0:
+                if managers.GameManager.get_instance().critical_combo > 3:
+                    sprites.CenteredFruitScore('Critical', managers.GameManager.get_instance().critical_combo * 2)
+                    pygame.mixer.Sound(config.sounds['critical']).play()
+                self.elapsed_critical = 0.0
+                managers.GameManager.get_instance().critical_combo = 0
 
-    def draw_blindness(self, screen: pygame.Surface):
-        if self.blindness:
+    def update_blindness(self) -> None:
+        if not managers.GameManager.get_instance().pause:
+            if self.blindness > 0:
+                self.blindness -= 2
+
+    def draw_blindness(self, screen: pygame.Surface) -> None:
+        if self.blindness > 0:
             surface = pygame.Surface((config.width, config.height))
             surface = surface.convert_alpha(surface)
             surface.fill((255, 255, 255, self.blindness))
             screen.blit(surface, (0, 0))
-            self.blindness -= 2
 
     def draw_score(self, screen: pygame.Surface) -> None:
         font = pygame.font.Font(config.game_font, 30)
@@ -416,13 +448,16 @@ class Arcade(Screen):
         super().__init__()
         self.active = True
         self.blindness = 0
-        self.time = datetime.time()
-        self.seconds = 0
+        self.time = 0
+        self.elapsed_time = 0.0
         self.elapsed_blade_session = 0.0
         self.elapsed_critical = 0.0
         self.freeze_screen, self.freeze_text, self.freeze_pos = self.create_freeze()
         self.blitz_screen, self.blitz_text, self.blitz_pos = self.create_blitz()
         self.double_screen, self.double_text, self.double_pos = self.create_double()
+        self.freeze_escape_time, self.freeze_escape_time, self.freeze_escape_time = 0.0, 0.0, 0.0
+        self.pause_data = list(utils.create_pause_board())
+        self.pause_info = list(utils.create_pause_info((20, 100)))
 
     def reload(self) -> None:
         managers.GameManager.get_instance().reload(Arcade.mode)
@@ -432,10 +467,11 @@ class Arcade(Screen):
         self.sound_game_start.play()
         self.active = True
         self.blindness = 0
-        self.time = datetime.datetime.now() + datetime.timedelta(seconds=config.arcade_time)
-        self.seconds = 0
+        self.time = config.arcade_time
+        self.elapsed_time = 0.0
         self.elapsed_blade_session = 0.0
         self.elapsed_critical = 0.0
+        self.freeze_escape_time, self.freeze_escape_time, self.freeze_escape_time = 0.0, 0.0, 0.0
         blades.Blade()
 
     def handle_event(self, event: pygame.event.Event) -> None:
@@ -451,54 +487,69 @@ class Arcade(Screen):
                 pygame.time.set_timer(Arcade.event_drop_fruit, int(0.3 * 1000))
             else:
                 pygame.time.set_timer(Arcade.event_drop_fruit, int(random.uniform(0.5, 2.0) * 1000))
-            for _ in range(random.randrange(4)):
-                self.create_fruit(random.choice(Arcade.fruits_classes))
+            if not managers.GameManager.get_instance().pause:
+                for _ in range(random.randrange(4)):
+                    self.create_fruit(random.choice(Arcade.fruits_classes))
         if event.type == Arcade.event_drop_bomb:
             pygame.time.set_timer(Arcade.event_drop_bomb, int(random.uniform(3.0, 7.0) * 1000))
-            for _ in range(random.randrange(3)):
-                self.create_fruit('Bomb')
+            if not managers.GameManager.get_instance().pause:
+                for _ in range(random.randrange(3)):
+                    self.create_fruit('Bomb')
         if event.type == Arcade.event_drop_sweet:
             pygame.time.set_timer(Arcade.event_drop_sweet, int(random.uniform(10.0, 15.0) * 1000))
-            n = random.randrange(99)
-            if n % 2 == 0:
-                self.create_fruit('FrozenApple')
-            elif n % 3 == 0:
-                self.create_fruit('Starfruit')
-            else:
-                self.create_fruit('Garnet')
+            if not managers.GameManager.get_instance().pause:
+                n = random.randrange(99)
+                if n % 2 == 0:
+                    self.create_fruit('FrozenApple')
+                elif n % 3 == 0:
+                    self.create_fruit('Starfruit')
+                else:
+                    self.create_fruit('Garnet')
         if event.type == Arcade.event_remove_freeze:
             self.set_freeze(False)
         if event.type == Arcade.event_stop_blitz:
             self.set_blitz(False)
         if event.type == Arcade.event_stop_double:
             self.set_double(False)
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                singletons.BladesGroup.get().start_session()
-        if event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1:
-                singletons.BladesGroup.get().end_session()
-        if event.type == pygame.MOUSEMOTION:
-            singletons.BladesGroup.get().add_mouse_track_pos()
-            has_fruit, has_bomb = singletons.BladesGroup.get().check_fruit_cut()
-            if has_fruit and not has_bomb:
-                managers.GameManager.get_instance().critical_combo += 1
-                self.elapsed_critical = 0.0
-            if has_bomb:
-                self.explode_bomb()
+        if not managers.GameManager.get_instance().pause:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    singletons.BladesGroup.get().start_session()
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    singletons.BladesGroup.get().end_session()
+            if event.type == pygame.MOUSEMOTION:
+                singletons.BladesGroup.get().add_mouse_track_pos()
+                has_fruit, has_bomb = singletons.BladesGroup.get().check_fruit_cut()
+                if has_fruit and not has_bomb:
+                    managers.GameManager.get_instance().critical_combo += 1
+                    self.elapsed_critical = 0.0
+                if has_bomb:
+                    self.explode_bomb()
+        else:
+            if event.type == pygame.KEYDOWN:
+                if pygame.key.get_pressed()[pygame.K_LALT]:
+                    pygame.time.set_timer(Arcade.event_drop_fruit, 0)
+                    pygame.time.set_timer(Arcade.event_drop_bomb, 0)
+                    pygame.time.set_timer(Arcade.event_change_screen, 10)
+
+    def handle_escape_event(self) -> None:
+        managers.GameManager.get_instance().pause = not managers.GameManager.get_instance().pause
 
     def update_screen(self, screen: pygame.Surface) -> None:
         super().update_screen(screen)
-        singletons.SplashesGroup.get().update()
+        if not managers.GameManager.get_instance().pause:
+            singletons.SplashesGroup.get().update()
+            singletons.PartsGroup.get().update()
+            singletons.FruitsGroup.get().update()
+            singletons.ScoresGroup.get().update()
+            self.update_blindness()
         singletons.SplashesGroup.get().draw(screen)
-        singletons.PartsGroup.get().update()
         singletons.PartsGroup.get().delete_invisible()
         singletons.PartsGroup.get().draw(screen)
-        singletons.FruitsGroup.get().update()
         singletons.FruitsGroup.get().delete_invisible()
         singletons.FruitsGroup.get().draw(screen)
         singletons.BladesGroup.get().update(screen)
-        singletons.ScoresGroup.get().update()
         singletons.ScoresGroup.get().draw(screen)
         self.draw_blindness(screen)
         self.draw_freeze(screen)
@@ -507,29 +558,43 @@ class Arcade(Screen):
         self.draw_score(screen)
         self.draw_best_score(screen)
         self.draw_timer(screen)
+        utils.draw_pause_info(self.pause_info, screen)
+        #  Именно тут для того, чтобы доска была поверх остального
+        if managers.GameManager.get_instance().pause:
+            utils.draw_pause_board(self.pause_data, screen)
 
     def loop_post(self, elapsed: float) -> None:
-        self.elapsed_blade_session += elapsed
-        if self.elapsed_blade_session >= 1.0:
-            self.elapsed_blade_session = 0.0
-            singletons.BladesGroup.get().end_session()
-            if pygame.mouse.get_pressed()[0]:
-                singletons.BladesGroup.get().start_session()
-        self.elapsed_critical += elapsed
-        if self.elapsed_critical >= 1.0:
-            if managers.GameManager.get_instance().critical_combo > 3:
-                sprites.CenteredFruitScore('Critical', managers.GameManager.get_instance().critical_combo * 2)
-                pygame.mixer.Sound(config.sounds['critical']).play()
-            self.elapsed_critical = 0.0
-            managers.GameManager.get_instance().critical_combo = 0
+        if not managers.GameManager.get_instance().pause:
+            self.elapsed_blade_session += elapsed
+            if self.elapsed_blade_session >= 1.0:
+                self.elapsed_blade_session = 0.0
+                singletons.BladesGroup.get().end_session()
+                if pygame.mouse.get_pressed()[0]:
+                    singletons.BladesGroup.get().start_session()
+            self.elapsed_critical += elapsed
+            if self.elapsed_critical >= 1.0:
+                if managers.GameManager.get_instance().critical_combo > 3:
+                    sprites.CenteredFruitScore('Critical', managers.GameManager.get_instance().critical_combo * 2)
+                    pygame.mixer.Sound(config.sounds['critical']).play()
+                self.elapsed_critical = 0.0
+                managers.GameManager.get_instance().critical_combo = 0
+            if self.active:
+                self.elapsed_time += elapsed
+                if self.elapsed_time >= 1.0:
+                    self.time -= 1
+                    self.elapsed_time = 0.0
 
-    def draw_blindness(self, screen: pygame.Surface):
-        if self.blindness:
+    def update_blindness(self) -> None:
+        if not managers.GameManager.get_instance().pause:
+            if self.blindness > 0:
+                self.blindness -= 2
+
+    def draw_blindness(self, screen: pygame.Surface) -> None:
+        if self.blindness > 0:
             surface = pygame.Surface((config.width, config.height))
             surface = surface.convert_alpha(surface)
             surface.fill((255, 255, 255, self.blindness))
             screen.blit(surface, (0, 0))
-            self.blindness -= 2
 
     def set_freeze(self, enabled: bool) -> None:
         if enabled:
@@ -622,10 +687,8 @@ class Arcade(Screen):
 
     def draw_timer(self, screen: pygame.Surface) -> None:
         font = pygame.font.Font(config.game_font, 30)
-        if self.active:
-            self.seconds = (self.time - datetime.datetime.now()).total_seconds()
-        minutes = int((self.seconds % 3600) / 60)
-        seconds = int(self.seconds % 60)
+        minutes = int((self.time % 3600) / 60)
+        seconds = int(self.time % 60)
         text = font.render(f'{minutes}:{str(seconds).rjust(2, "0")}', 1, (200, 100, 10))
         screen.blit(text, (200, 20))
         if not minutes and not seconds and self.active:
@@ -664,6 +727,7 @@ class Arcade(Screen):
         singletons.PartsGroup.get().empty()
 
     def delete_all(self) -> None:
+        self.sound_blitz.stop()
         pygame.time.set_timer(Arcade.event_drop_fruit, 0)
         pygame.time.set_timer(Arcade.event_drop_bomb, 0)
         pygame.time.set_timer(Arcade.event_drop_sweet, 0)
@@ -710,6 +774,9 @@ class EndTable(Screen):
         if event.type == pygame.MOUSEBUTTONDOWN:
             pygame.time.set_timer(EndTable.event_change_screen, 1000)
 
+    def handle_escape_event(self) -> None:
+        pygame.time.set_timer(EndTable.event_change_screen, 1000)
+
     def update_screen(self, screen: pygame.Surface) -> None:
         super().update_screen(screen)
         self.draw_table(screen)
@@ -725,6 +792,7 @@ class EndTable(Screen):
 
 class Quit(Screen):
     def reload(self):
+        managers.DatabaseManager.get_instance().close()
         utils.terminate()
 
     @classmethod

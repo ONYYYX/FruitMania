@@ -10,6 +10,7 @@ class Game:
         self._freeze = False
         self._blitz = False
         self._double = False
+        self._pause = False
 
     def reload(self, mode) -> None:
         self.score = 0
@@ -19,6 +20,7 @@ class Game:
         self.freeze = False
         self.blitz = False
         self.double = False
+        self.pause = False
 
     @property
     def freeze(self):
@@ -42,7 +44,15 @@ class Game:
 
     @double.setter
     def double(self, value):
-        self._double = value
+        self._double = value\
+
+    @property
+    def pause(self):
+        return self._pause
+
+    @pause.setter
+    def pause(self, value):
+        self._pause = value
 
     @property
     def score(self):

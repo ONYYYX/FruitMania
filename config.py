@@ -36,4 +36,5 @@ images = {
     'splashes': 'splashes.png',
     'lives': 'screens/classic/lives.png',
     'table': 'screens/end_table/table.png',
+    'pause_board': 'pause_board.png',
 }
