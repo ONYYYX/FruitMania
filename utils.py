@@ -13,7 +13,7 @@ def init() -> pygame.Surface:
         pygame.mixer.init()
     global screen
     if not screen:
-        screen = pygame.display.set_mode((config.width, config.height), pygame.FULLSCREEN)
+        screen = pygame.display.set_mode((config.width, config.height))
     return screen
 
 
